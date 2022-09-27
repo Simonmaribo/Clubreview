@@ -1,0 +1,91 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["referentialIntegrity"]
+}
+
+datasource db {
+  provider             = "mysql"
+  url                  = env("DATABASE_URL")
+  referentialIntegrity = "prisma"
+}
+
+model User {
+  uuid        String       @id @unique @default(uuid())
+  email       String       @unique
+  displayName String?
+  avatarUrl   String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  credential  Credential?
+  sessions    Session[]
+  clubs       Club[]
+  reviews     Review[]
+  settings    UserSetting?
+}
+
+model UserSetting {
+  userId    String  @id @unique
+  user      User    @relation(fields: [userId], references: [uuid])
+  allowMail Boolean @default(false)
+}
+
+model Credential {
+  userId     String  @id @unique
+  user       User    @relation(fields: [userId], references: [uuid])
+  facebookId String?
+  googleId   String?
+}
+
+model Session {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [uuid])
+  ipadress  String
+  device    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model City {
+  id        Int      @id @default(autoincrement())
+  name      String
+  country   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  clubs     Club[]
+}
+
+model Club {
+  id            Int      @id @default(autoincrement())
+  name          String
+  cityId        Int
+  city          City     @relation(fields: [cityId], references: [id])
+  ownerId       String
+  owner         User     @relation(fields: [ownerId], references: [uuid])
+  imageUrl      String?
+  logoUrl       String?
+  reviews       Review[]
+  rating        Float?
+  rating_drinks Float?
+  rating_music  Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  active        Boolean  @default(true)
+}
+
+model Review {
+  id            Int      @id @default(autoincrement())
+  clubId        Int
+  club          Club     @relation(fields: [clubId], references: [id])
+  userId        String
+  user          User     @relation(fields: [userId], references: [uuid])
+  rating        Int
+  rating_drinks Int
+  rating_music  Int
+  comment       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
