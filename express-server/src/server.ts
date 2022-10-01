@@ -6,10 +6,13 @@ const httpServer = http.createServer(app);
 
 const bodyParser = require("body-parser");
 const cron = require("node-cron");
+const rateLimit = require('express-rate-limit');
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(require("./utils/cors"));
+app.use(require('cookie-parser')());
+app.use(require('express-device').capture());
 
 const { getFiles, loadFile, getRouteName } = require('./utils/files');
 
@@ -28,10 +31,17 @@ require("dotenv").config();
     console.log("\x1b[32mstart\x1b[0m Prisma Client")
     await prisma.$connect();
 
+    // load managers
+    const authManager = require("./managers/Auth")(prisma);
+    const userManager = require("./managers/User")(prisma);
+
+
     // create the server
     const server: Server = {
         database: prisma,
         environment: process.env.NODE_ENV == "production" ? "production" : "development",
+        authManager: authManager,
+        userManager: userManager,
     }
     
     // load routes
@@ -46,7 +56,18 @@ require("dotenv").config();
         let routeName = getRouteName(routePath.replace('./src/routes', ''));
         let router = route.router();
 
-        app.use(routeName, router);
+        if (route.rateLimit){
+            var rateLimiter = rateLimit({
+                windowMs: route.rateLimit.timePeriod*1000,
+                max: route.rateLimit.max,
+                message: "Too many requests from this IP, please try again later"
+            })
+            if(route.auth) app.use(routeName, rateLimiter, authManager.ensureAuthentication, router)
+            else app.use(routeName, rateLimiter, router)
+        } else {
+            if(route.auth) app.use(routeName, authManager.ensureAuthentication, router);
+            else app.use(routeName, router);
+        }
 
         console.log("\x1b[2m ○ \x1b[0m\x1b[37m" + (routeName == '/' ? routeName : routeName.slice(0, -1)) + (routeName == '/' ? " \x1b[3m\x1b[35m(index)" : "") + "\x1b[0m")
         for(var j = 0; j < router.stack.length; j++) {

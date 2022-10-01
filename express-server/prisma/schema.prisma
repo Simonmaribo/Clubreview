@@ -13,7 +13,7 @@ datasource db {
 }
 
 model User {
-  uuid        String       @id @unique @default(uuid())
+  id          String       @id @unique @default(uuid())
   email       String       @unique
   displayName String?
   avatarUrl   String?
@@ -23,26 +23,27 @@ model User {
   sessions    Session[]
   clubs       Club[]
   reviews     Review[]
-  settings    UserSetting?
+  settings    Setting?
 }
 
-model UserSetting {
+model Setting {
   userId    String  @id @unique
-  user      User    @relation(fields: [userId], references: [uuid])
+  user      User    @relation(fields: [userId], references: [id])
   allowMail Boolean @default(false)
 }
 
 model Credential {
   userId     String  @id @unique
-  user       User    @relation(fields: [userId], references: [uuid])
+  user       User    @relation(fields: [userId], references: [id])
   facebookId String?
   googleId   String?
 }
 
 model Session {
-  userId    String   @id
-  user      User     @relation(fields: [userId], references: [uuid])
-  ipadress  String
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  ipAddress String
   device    String
   token     String   @unique
   createdAt DateTime @default(now())
@@ -64,7 +65,7 @@ model Club {
   cityId        Int
   city          City     @relation(fields: [cityId], references: [id])
   ownerId       String
-  owner         User     @relation(fields: [ownerId], references: [uuid])
+  owner         User     @relation(fields: [ownerId], references: [id])
   imageUrl      String?
   logoUrl       String?
   reviews       Review[]
@@ -81,7 +82,7 @@ model Review {
   clubId        Int
   club          Club     @relation(fields: [clubId], references: [id])
   userId        String
-  user          User     @relation(fields: [userId], references: [uuid])
+  user          User     @relation(fields: [userId], references: [id])
   rating        Int
   rating_drinks Int
   rating_music  Int
