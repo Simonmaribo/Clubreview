@@ -14,6 +14,8 @@ app.use(require("./utils/cors"));
 app.use(require('cookie-parser')());
 app.use(require('express-device').capture());
 
+app.use(require('./utils/morgan'))
+
 const { getFiles, loadFile, getRouteName } = require('./utils/files');
 
 const { PrismaClient } = require('@prisma/client');
